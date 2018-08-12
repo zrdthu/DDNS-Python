@@ -5,7 +5,7 @@ from urllib import request, error, parse
 import re
 import paramiko
 import json
-from scp import SCPClient
+import scp
 from io import StringIO
 from utils import daemonize, timestamp2str
 
@@ -22,14 +22,15 @@ def send_ip(ip, domain, hostname, username, port, ssh_password, key_filename, re
     try:
         ssh_client = paramiko.SSHClient()
         ssh_client.load_system_host_keys()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh_client.connect(hostname, username=username, port=port, password=ssh_password, key_filename=key_filename)
-        scp = SCPClient(ssh_client.get_transport())
+        scp_client = scp.SCPClient(ssh_client.get_transport())
         s = StringIO(ip)
-        scp.putfo(s, '%s/%s.ddnsip' % (remote_dir, domain))
-        scp.close()
+        scp_client.putfo(s, '%s/%s.ddnsip' % (remote_dir, domain))
+        scp_client.close()
         s.close()
-    except:
-        pass
+    except scp.SCPException as e:
+        print(e.args)
 
 if __name__ == '__main__':
     conf = {}
