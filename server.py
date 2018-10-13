@@ -59,17 +59,18 @@ class Domain_Maintainance:
             lines = hosts.readlines()
             for domain in self.domains:
                 matched = False
-                for line in lines:
+                for i in range(len(lines)):
                     domain_name_reg = '\\s+' + \
                         domain.name.replace(
                             '-', '\\-').replace('_', '\\_').replace('.', '\\.')
-                    if re.search(domain_name_reg, line, re.RegexFlag.IGNORECASE):
-                        re.sub(r'\d+\.\d+\.\d+\.\d+', domain.ip, line)
+                    if re.search(domain_name_reg, lines[i], re.RegexFlag.IGNORECASE):
+                        lines[i] = re.sub(r'\d+\.\d+\.\d+\.\d+', domain.ip, lines[i])
                         matched = True
                 if not matched:
                     lines.append('%s %s\n' % (domain.ip, domain.name))
 
         with open('/etc/hosts', 'w') as hosts:
+            print('%s: writing hosts' % timestamp2str(time.time()))
             hosts.writelines(lines)
 
     def update(self):
@@ -103,6 +104,7 @@ def update_dnsmasq():
     for pid in psutil.pids():
         if psutil.pid_exists(pid) and psutil.Process(pid).username() == 'dnsmasq':
             os.kill(pid, signal.SIGHUP)
+            print('%s: dnsmasq updated' % timestamp2str(time.time()))
 
 
 if __name__ == '__main__':
@@ -120,5 +122,4 @@ if __name__ == '__main__':
     while True:
         if domain_maintainance.update():
             update_dnsmasq()
-            print('%s: dnsmasq updated' % timestamp2str(time.time()))
         time.sleep(interval)
